@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { MedicationCard } from './MedicationCard'
 import { AddMedicationModal } from './AddMedicationModal'
+import { InteractionChecker } from './InteractionChecker'
 import { projectId } from '../utils/supabase/info'
 import { supabase } from '../utils/supabase/client'
 import { PlusCircle, LogOut } from 'lucide-react'
@@ -13,6 +14,7 @@ interface Medication {
   dosage: string
   frequency: string
   createdAt: string
+  reminderTime?: string
 }
 
 interface DashboardProps {
@@ -106,6 +108,14 @@ export function Dashboard({ accessToken, onLogout }: DashboardProps) {
       console.error('Error adding medication:', error)
       alert('Failed to add medication')
     }
+  }
+
+  const handleUpdateReminder = (medicationId: string, reminderTime: string | undefined) => {
+    setMedications(medications.map(med => 
+      med.id === medicationId 
+        ? { ...med, reminderTime }
+        : med
+    ))
   }
 
   const handleDeleteMedication = async (id: string) => {
@@ -203,6 +213,7 @@ export function Dashboard({ accessToken, onLogout }: DashboardProps) {
                     taken={takenStatus[med.id] || false}
                     onMarkTaken={(taken) => handleMarkTaken(med.id, taken)}
                     onDelete={() => handleDeleteMedication(med.id)}
+                    onUpdateReminder={(reminderTime) => handleUpdateReminder(med.id, reminderTime)}
                     accessToken={accessToken}
                   />
                 ))}
@@ -211,10 +222,19 @@ export function Dashboard({ accessToken, onLogout }: DashboardProps) {
           </CardContent>
         </Card>
 
-        <Button onClick={() => setShowAddModal(true)} className="w-full gap-2">
-          <PlusCircle className="w-5 h-5" />
-          Add Medication
-        </Button>
+        <div className="space-y-3">
+          {medications.length > 0 && (
+            <InteractionChecker
+              medications={medications}
+              accessToken={accessToken}
+            />
+          )}
+
+          <Button onClick={() => setShowAddModal(true)} className="w-full gap-2">
+            <PlusCircle className="w-5 h-5" />
+            Add Medication
+          </Button>
+        </div>
 
         {showAddModal && (
           <AddMedicationModal
