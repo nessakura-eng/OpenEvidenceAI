@@ -71,7 +71,7 @@ app.post('/make-server-2e410764/medications', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
-    const { name, dosage, frequency } = await c.req.json()
+    const { name, dosage, frequency, reminderTime } = await c.req.json()
     
     if (!name || !dosage || !frequency) {
       return c.json({ error: 'Name, dosage, and frequency are required' }, 400)
@@ -83,6 +83,7 @@ app.post('/make-server-2e410764/medications', async (c) => {
       name,
       dosage,
       frequency,
+      reminderTime: reminderTime || undefined,
       createdAt: new Date().toISOString()
     }
 
@@ -227,6 +228,103 @@ app.post('/make-server-2e410764/medication-info', async (c) => {
   } catch (error) {
     console.log(`Error getting medication info: ${error}`)
     return c.json({ error: 'Failed to get medication information' }, 500)
+  }
+})
+
+// Check medication interactions
+app.post('/make-server-2e410764/check-interactions', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1]
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+    
+    if (!user?.id || authError) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const { medications } = await c.req.json()
+    
+    if (!medications || medications.length === 0) {
+      return c.json({ interactions: 'No medications to check' })
+    }
+
+    if (medications.length === 1) {
+      return c.json({ interactions: 'You need at least 2 medications to check for interactions.' })
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY')
+    
+    if (!apiKey) {
+      return c.json({ error: 'AI service not configured. Please add your OpenAI API key.' }, 500)
+    }
+
+    const medicationList = medications.map((m: any) => `${m.name} (${m.dosage})`).join(', ')
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a medication safety assistant. Analyze medication combinations for potential dangerous interactions. Be thorough but concise. Always include a disclaimer that this is educational information and patients should consult their doctor or pharmacist for medical advice.'
+          },
+          {
+            role: 'user',
+            content: `Analyze these medications for potentially dangerous interactions: ${medicationList}. List any significant interactions, their severity, and what to watch for. If no major interactions are found, state that clearly. Format your response with clear sections.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 800
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.log(`OpenAI API error while checking interactions: ${errorText}`)
+      return c.json({ error: 'Failed to check interactions' }, 500)
+    }
+
+    const data = await response.json()
+    const interactions = data.choices[0]?.message?.content || 'Unable to analyze interactions'
+
+    return c.json({ interactions })
+  } catch (error) {
+    console.log(`Error checking medication interactions: ${error}`)
+    return c.json({ error: 'Failed to check medication interactions' }, 500)
+  }
+})
+
+// Update medication reminder time
+app.patch('/make-server-2e410764/medications/:id/reminder', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1]
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+    
+    if (!user?.id || authError) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const medId = c.req.param('id')
+    const { reminderTime } = await c.req.json()
+
+    const medications = await kv.get(`user:${user.id}:medications`) || []
+    const medIndex = medications.findIndex((med: any) => med.id === medId)
+    
+    if (medIndex === -1) {
+      return c.json({ error: 'Medication not found' }, 404)
+    }
+
+    medications[medIndex].reminderTime = reminderTime
+    await kv.set(`user:${user.id}:medications`, medications)
+
+    return c.json({ success: true, medication: medications[medIndex] })
+  } catch (error) {
+    console.log(`Error updating reminder: ${error}`)
+    return c.json({ error: 'Failed to update reminder' }, 500)
   }
 })
 
