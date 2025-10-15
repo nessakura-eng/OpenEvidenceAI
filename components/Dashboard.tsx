@@ -1,0 +1,228 @@
+import { useState, useEffect } from 'react'
+import { Button } from './ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { MedicationCard } from './MedicationCard'
+import { AddMedicationModal } from './AddMedicationModal'
+import { projectId } from '../utils/supabase/info'
+import { supabase } from '../utils/supabase/client'
+import { PlusCircle, LogOut } from 'lucide-react'
+
+interface Medication {
+  id: string
+  name: string
+  dosage: string
+  frequency: string
+  createdAt: string
+}
+
+interface DashboardProps {
+  accessToken: string
+  onLogout: () => void
+}
+
+export function Dashboard({ accessToken, onLogout }: DashboardProps) {
+  const [medications, setMedications] = useState<Medication[]>([])
+  const [takenStatus, setTakenStatus] = useState<Record<string, boolean>>({})
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const today = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    loadMedications()
+    loadTakenStatus()
+  }, [])
+
+  const loadMedications = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2e410764/medications`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      )
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMedications(data.medications || [])
+      } else {
+        console.error('Failed to load medications:', data.error)
+      }
+    } catch (error) {
+      console.error('Error loading medications:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTakenStatus = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2e410764/taken/${today}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      )
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        setTakenStatus(data.takenMeds || {})
+      }
+    } catch (error) {
+      console.error('Error loading taken status:', error)
+    }
+  }
+
+  const handleAddMedication = async (medication: Omit<Medication, 'id' | 'createdAt'>) => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2e410764/medications`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify(medication)
+        }
+      )
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMedications([...medications, data.medication])
+        setShowAddModal(false)
+      } else {
+        console.error('Failed to add medication:', data.error)
+        alert('Failed to add medication: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error adding medication:', error)
+      alert('Failed to add medication')
+    }
+  }
+
+  const handleDeleteMedication = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this medication?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2e410764/medications/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      )
+
+      if (response.ok) {
+        setMedications(medications.filter(med => med.id !== id))
+      } else {
+        console.error('Failed to delete medication')
+        alert('Failed to delete medication')
+      }
+    } catch (error) {
+      console.error('Error deleting medication:', error)
+      alert('Failed to delete medication')
+    }
+  }
+
+  const handleMarkTaken = async (medicationId: string, taken: boolean) => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2e410764/mark-taken`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            medicationId,
+            date: today,
+            taken
+          })
+        }
+      )
+
+      if (response.ok) {
+        setTakenStatus({
+          ...takenStatus,
+          [medicationId]: taken
+        })
+      } else {
+        console.error('Failed to update taken status')
+        alert('Failed to update status')
+      }
+    } catch (error) {
+      console.error('Error updating taken status:', error)
+      alert('Failed to update status')
+    }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    onLogout()
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1>My Medications</h1>
+          <Button variant="ghost" onClick={handleLogout} className="gap-2">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
+        </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Today's Medications - {new Date().toLocaleDateString()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p>Loading medications...</p>
+            ) : medications.length === 0 ? (
+              <p className="text-muted-foreground">No medications added yet. Add your first medication below!</p>
+            ) : (
+              <div className="space-y-3">
+                {medications.map(med => (
+                  <MedicationCard
+                    key={med.id}
+                    medication={med}
+                    taken={takenStatus[med.id] || false}
+                    onMarkTaken={(taken) => handleMarkTaken(med.id, taken)}
+                    onDelete={() => handleDeleteMedication(med.id)}
+                    accessToken={accessToken}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Button onClick={() => setShowAddModal(true)} className="w-full gap-2">
+          <PlusCircle className="w-5 h-5" />
+          Add Medication
+        </Button>
+
+        {showAddModal && (
+          <AddMedicationModal
+            onClose={() => setShowAddModal(false)}
+            onAdd={handleAddMedication}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
