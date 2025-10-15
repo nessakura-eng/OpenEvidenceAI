@@ -1,19 +1,21 @@
 import { useState, useRef } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { Label } from './ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Camera, Keyboard } from 'lucide-react'
 
 interface AddMedicationModalProps {
   onClose: () => void
-  onAdd: (medication: { name: string; dosage: string; frequency: string }) => void
+  onAdd: (medication: { name: string; dosage: string; frequency: string; reminderTime?: string }) => void
 }
 
 export function AddMedicationModal({ onClose, onAdd }: AddMedicationModalProps) {
   const [name, setName] = useState('')
   const [dosage, setDosage] = useState('')
   const [frequency, setFrequency] = useState('')
+  const [reminderTime, setReminderTime] = useState('')
   const [scannedImage, setScannedImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -25,7 +27,12 @@ export function AddMedicationModal({ onClose, onAdd }: AddMedicationModalProps) 
       return
     }
 
-    onAdd({ name, dosage, frequency })
+    onAdd({ 
+      name, 
+      dosage, 
+      frequency,
+      reminderTime: reminderTime || undefined
+    })
   }
 
   const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +104,19 @@ export function AddMedicationModal({ onClose, onAdd }: AddMedicationModalProps) 
                     placeholder="e.g., 2"
                     required
                   />
+                </div>
+                <div>
+                  <Label htmlFor="reminderTime">Daily Reminder Time (Optional)</Label>
+                  <Input
+                    id="reminderTime"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set a time to be reminded to take this medication
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
@@ -174,6 +194,19 @@ export function AddMedicationModal({ onClose, onAdd }: AddMedicationModalProps) 
                       placeholder="e.g., 2"
                       required
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="reminderTime-scan">Daily Reminder Time (Optional)</Label>
+                    <Input
+                      id="reminderTime-scan"
+                      type="time"
+                      value={reminderTime}
+                      onChange={(e) => setReminderTime(e.target.value)}
+                      className="mt-2"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Set a time to be reminded to take this medication
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" className="flex-1">
