@@ -45,7 +45,7 @@ export function Dashboard({
     new Date(),
   );
   const [showCalendar, setShowCalendar] = useState(false);
-  const [userName, setUserName] = useState(""); // will be replaced by real name
+  const [userName, setUserName] = useState<string | null>(null); // will be replaced by real name
 
   const formattedDate = selectedDate
     .toISOString()
@@ -53,20 +53,28 @@ export function Dashboard({
 
   // Fetch user's name from Supabase
   useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        const nameFromMeta =
-          data.user?.raw_user_meta_data?.full_name;
-        if (nameFromMeta) setUserName(nameFromMeta);
-      } catch (err) {
-        console.error("Error fetching user name:", err);
-      }
-    };
+  const fetchUserName = async () => {
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
 
-    fetchUserName();
-    loadMedications();
-  }, []);
+      const nameFromMeta = data.user?.user_metadata?.full_name 
+        || data.user?.raw_user_meta_data?.full_name;
+      
+      if (nameFromMeta) {
+        setUserName(nameFromMeta);
+      } else {
+        console.warn("No full_name found in user metadata");
+      }
+    } catch (err) {
+      console.error("Error fetching user name:", err);
+    }
+  };
+
+  fetchUserName();
+  loadMedications();
+}, []);
+
 
   useEffect(() => {
     loadTakenStatus(formattedDate);
@@ -238,7 +246,7 @@ export function Dashboard({
         <div className="flex justify-between items-center mb-6">
           <h1>
             {userName
-              ? `${userName}'s Medications`
+              ? `Welcome back, ${userName}!`
               : "My Medications"}
           </h1>
           <div className="flex gap-2">
