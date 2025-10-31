@@ -187,3 +187,66 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Optional: smooth transition for calendar expand */
+.react-calendar {
+  transition: all 0.3s ease-in-out;
+  border: none; /* Remove black outer border */
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* Remove dotted lines under weekdays */
+.react-calendar__month-view__weekdays__weekday abbr {
+  border-bottom: none;
+}
+
+/* Font for days and weekdays */
+.react-calendar__month-view__weekdays__weekday abbr,
+.react-calendar__tile {
+  font-family: "Inter", sans-serif;
+}
+
+/* Style individual day tiles */
+.react-calendar__tile {
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.react-calendar__tile:hover {
+  background-color: #e0f2fe; /* Tailwind 'sky-100' color */
+  border-radius: 0.5rem;
+}
+
+/* Highlight selected day */
+.react-calendar__tile--active {
+  background-color: #3b82f6 !important; /* Tailwind 'blue-500' */
+  color: white !important;
+  border-radius: 0.5rem !important;
+}
+
+/* Highlight today */
+.react-calendar__tile--now {
+  border: 2px solid #3b82f6; /* Tailwind 'blue-500' */
+  border-radius: 0.5rem;
+}
+
+/* Navigation container (month + arrows) */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: space-between; /* keeps arrows at equal distance from month */
+  align-items: center;
+  padding: 0.5rem 1rem; /* adds equal padding left and right */
+}
+
+/* Navigation arrows */
+.react-calendar__navigation__arrow {
+  margin: 0; /* remove default margin */
+  padding: 0.25rem 0.5rem; /* optional: gives some clickable area */
+}
+
+/* Optional: center the month title */
+.react-calendar__navigation__label {
+  flex-grow: 1;
+  text-align: center;
+}
