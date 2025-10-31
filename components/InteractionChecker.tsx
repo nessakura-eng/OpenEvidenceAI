@@ -147,11 +147,12 @@ export function InteractionChecker({
               <p className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-700" />
                 <span>
-                  <strong>Medical Disclaimer:</strong> This
-                  information is for educational purposes only
-                  and should not be used as medical advice.
-                  Always consult your doctor or pharmacist
-                  before making any changes to your medications.
+                  <strong>IMPORTANT DISCLAIMER:</strong> This
+                  AI-generated information is for educational
+                  purposes only. It is NOT a substitute for
+                  medical advice. Always consult your doctor or
+                  pharmacist before making any changes to your
+                  medications or treatment.
                 </span>
               </p>
             </div>
