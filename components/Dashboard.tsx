@@ -12,7 +12,12 @@ import { InteractionChecker } from "./InteractionChecker";
 import { projectId } from "../utils/supabase/info";
 import { supabase } from "../utils/supabase/client";
 import { RefillRequestPage } from "./RefillRequestPage";
-import { PlusCircle, LogOut, CalendarDays } from "lucide-react";
+import {
+  PlusCircle,
+  LogOut,
+  CalendarDays,
+  Repeat,
+} from "lucide-react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
@@ -55,28 +60,28 @@ export function Dashboard({
 
   // Fetch user's name from Supabase
   useEffect(() => {
-  const fetchUserName = async () => {
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) throw error;
+    const fetchUserName = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
 
-      const nameFromMeta = data.user?.user_metadata?.full_name 
-        || data.user?.raw_user_meta_data?.full_name;
-      
-      if (nameFromMeta) {
-        setUserName(nameFromMeta);
-      } else {
-        console.warn("No full_name found in user metadata");
+        const nameFromMeta =
+          data.user?.user_metadata?.full_name ||
+          data.user?.raw_user_meta_data?.full_name;
+
+        if (nameFromMeta) {
+          setUserName(nameFromMeta);
+        } else {
+          console.warn("No full_name found in user metadata");
+        }
+      } catch (err) {
+        console.error("Error fetching user name:", err);
       }
-    } catch (err) {
-      console.error("Error fetching user name:", err);
-    }
-  };
+    };
 
-  fetchUserName();
-  loadMedications();
-}, []);
-
+    fetchUserName();
+    loadMedications();
+  }, []);
 
   useEffect(() => {
     loadTakenStatus(formattedDate);
@@ -158,8 +163,8 @@ export function Dashboard({
   };
 
   const handleRequestRefill = () => {
-  setShowRefillPage(true);
-};
+    setShowRefillPage(true);
+  };
 
   const handleUpdateReminder = (
     medicationId: string,
@@ -247,8 +252,12 @@ export function Dashboard({
   };
 
   if (showRefillPage) {
-  return <RefillRequestPage onBack={() => setShowRefillPage(false)} />;
-}
+    return (
+      <RefillRequestPage
+        onBack={() => setShowRefillPage(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
