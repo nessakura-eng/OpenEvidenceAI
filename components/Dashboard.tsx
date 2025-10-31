@@ -11,6 +11,7 @@ import { AddMedicationModal } from "./AddMedicationModal";
 import { InteractionChecker } from "./InteractionChecker";
 import { projectId } from "../utils/supabase/info";
 import { supabase } from "../utils/supabase/client";
+import { RefillRequestPage } from "./RefillRequestPage";
 import { PlusCircle, LogOut, CalendarDays } from "lucide-react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -46,6 +47,7 @@ export function Dashboard({
   );
   const [showCalendar, setShowCalendar] = useState(false);
   const [userName, setUserName] = useState<string | null>(null); // will be replaced by real name
+  const [showRefillPage, setShowRefillPage] = useState(false);
 
   const formattedDate = selectedDate
     .toISOString()
@@ -155,6 +157,10 @@ export function Dashboard({
     }
   };
 
+  const handleRequestRefill = () => {
+  setShowRefillPage(true);
+};
+
   const handleUpdateReminder = (
     medicationId: string,
     reminderTime: string | undefined,
@@ -239,6 +245,10 @@ export function Dashboard({
     await supabase.auth.signOut();
     onLogout();
   };
+
+  if (showRefillPage) {
+  return <RefillRequestPage onBack={() => setShowRefillPage(false)} />;
+}
 
   return (
     <div className="min-h-screen bg-background">
@@ -339,6 +349,14 @@ export function Dashboard({
           >
             <PlusCircle className="w-5 h-5" />
             Add Medication
+          </Button>
+
+          <Button
+            onClick={handleRequestRefill}
+            className="w-full gap-2"
+          >
+            <Repeat className="w-5 h-5" />
+            Request Refill
           </Button>
         </div>
 
