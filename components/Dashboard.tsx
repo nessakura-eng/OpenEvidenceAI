@@ -9,6 +9,7 @@ import {
 import { MedicationCard } from "./MedicationCard";
 import { AddMedicationModal } from "./AddMedicationModal";
 import { InteractionChecker } from "./InteractionChecker";
+import { MedicalConditionsPage } from "./MedicalConditionsPage";
 import { projectId } from "../utils/supabase/info";
 import { supabase } from "../utils/supabase/client";
 import { RefillRequestPage } from "./RefillRequestPage";
@@ -17,9 +18,15 @@ import {
   LogOut,
   CalendarDays,
   Repeat,
+  Heart,
 } from "lucide-react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import { Calendar } from "./ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover";
+import { format } from "date-fns@4.1.0";
 
 interface Medication {
   id: string;
@@ -28,6 +35,8 @@ interface Medication {
   frequency: string;
   createdAt: string;
   reminderTime?: string;
+  refillDate?: string;
+  supplyDays?: string;
 }
 
 interface DashboardProps {
@@ -50,9 +59,9 @@ export function Dashboard({
   const [selectedDate, setSelectedDate] = useState<Date>(
     new Date(),
   );
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null); // will be replaced by real name
+  const [userName, setUserName] = useState<string | null>(null);
   const [showRefillPage, setShowRefillPage] = useState(false);
+  const [showConditionsPage, setShowConditionsPage] = useState(false);
 
   const formattedDate = selectedDate
     .toISOString()
@@ -166,6 +175,10 @@ export function Dashboard({
     setShowRefillPage(true);
   };
 
+  const handleManageConditions = () => {
+    setShowConditionsPage(true);
+  };
+
   const handleUpdateReminder = (
     medicationId: string,
     reminderTime: string | undefined,
@@ -259,6 +272,15 @@ export function Dashboard({
     );
   }
 
+  if (showConditionsPage) {
+    return (
+      <MedicalConditionsPage
+        accessToken={accessToken}
+        onBack={() => setShowConditionsPage(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4">
@@ -281,36 +303,33 @@ export function Dashboard({
         </div>
 
         <Card className="mb-6">
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
               Medications for{" "}
-              {selectedDate.toLocaleDateString()}
+              {format(selectedDate, "MMMM d, yyyy")}
             </CardTitle>
-            <Button
-              variant="ghost"
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="gap-2"
-            >
-              <CalendarDays className="w-4 h-4" />
-              Calendar
-            </Button>
-          </CardHeader>
-
-          {/* Modern dropdown calendar */}
-          {showCalendar && (
-            <div className="mt-3 flex justify-center">
-              <div className="p-4 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarDays className="w-4 h-4" />
+                  Calendar
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0"
+                align="end"
+              >
                 <Calendar
-                  onChange={(date) =>
-                    setSelectedDate(date as Date)
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) =>
+                    date && setSelectedDate(date)
                   }
-                  value={selectedDate}
-                  className="border-0 text-black dark:text-white"
-                  tileClassName="!border-0"
+                  initialFocus
                 />
-              </div>
-            </div>
-          )}
+              </PopoverContent>
+            </Popover>
+          </CardHeader>
 
           <CardContent>
             {loading ? (
@@ -344,7 +363,7 @@ export function Dashboard({
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {medications.length > 0 && (
             <InteractionChecker
               medications={medications}
@@ -363,9 +382,19 @@ export function Dashboard({
           <Button
             onClick={handleRequestRefill}
             className="w-full gap-2"
+            variant="outline"
           >
             <Repeat className="w-5 h-5" />
             Request Refill
+          </Button>
+
+          <Button
+            onClick={handleManageConditions}
+            className="w-full gap-2"
+            variant="outline"
+          >
+            <Heart className="w-5 h-5" />
+            Manage Medical Conditions
           </Button>
         </div>
 
