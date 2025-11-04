@@ -4,7 +4,7 @@ import { Card } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
 import { MedicationInfoModal } from "./MedicationInfoModal";
 import { ReminderTimeEditor } from "./ReminderTimeEditor";
-import { Trash2, Info, Clock } from "lucide-react";
+import { Trash2, Info, Clock, Pill } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,8 @@ interface Medication {
   frequency: string;
   createdAt: string;
   reminderTime?: string;
+  refillDate?: string;
+  supplyDays?: string;
 }
 
 interface MedicationCardProps {
@@ -123,6 +125,42 @@ export function MedicationCard({
                 Reminder: {medication.reminderTime}
               </p>
             )}
+
+            {medication.refillDate &&
+              medication.supplyDays &&
+              (() => {
+                const refillDate = new Date(
+                  medication.refillDate,
+                );
+                const supplyDays = parseInt(
+                  medication.supplyDays,
+                );
+                const endDate = new Date(refillDate);
+                endDate.setDate(endDate.getDate() + supplyDays);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysLeft = Math.ceil(
+                  (endDate.getTime() - today.getTime()) /
+                    (1000 * 60 * 60 * 24),
+                );
+
+                return (
+                  <p
+                    className={`text-sm flex items-center gap-1 mt-1 font-medium ${
+                      daysLeft <= 7
+                        ? "text-destructive"
+                        : daysLeft <= 14
+                          ? "text-orange-600"
+                          : "text-green-600"
+                    }`}
+                  >
+                    <Pill className="w-3 h-3" />
+                    {daysLeft > 0
+                      ? `Refill due in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`
+                      : "Refill needed now!"}
+                  </p>
+                );
+              })()}
           </div>
 
           <div className="flex gap-2">
